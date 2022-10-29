@@ -1,0 +1,7 @@
+name: Interactions
+version: '${project.version}'
+main: net.quepierts.interactions.Interactions
+api-version: 1.18
+softdepend: [ ItemAdders ]
+authors: [ Louis_Quepierts ]
+description: You can add the interact actions on specified items
