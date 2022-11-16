@@ -1,33 +1,46 @@
 package net.quepierts.interactions.main.config.loader;
 
 import net.quepierts.interactions.Interactions;
-import net.quepierts.interactions.api.ICondition;
-import net.quepierts.interactions.api.IExecutable;
+import net.quepierts.interactions.api.AbstractAction;
 import net.quepierts.interactions.main.config.Entry;
 import net.quepierts.interactions.main.data.action.ActionManager;
 import net.quepierts.interactions.main.data.action.ExecuteType;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class ActionLoader {
-    private static ExecuteType process_requiredExecutorType = null;
+public class ActionLoader { ;
+    private static final List<String> executorTypes = new ArrayList<>(3);
+    private static boolean multiTypes = false;
 
-    public static void setProcess_requiredExecutorType(ExecuteType type) {
+    public static void setProcess_requiredExecutorType(String type) {
         if (type == null) {
             return;
         }
-        if (process_requiredExecutorType == null || type.priority() < process_requiredExecutorType.priority()) {
-            process_requiredExecutorType = type;
+
+        String executorType;
+        try {
+            executorType = executorTypes.get(0);
+        } catch (IndexOutOfBoundsException e) {
+            executorType = null;
+        }
+
+        if (executorType == null || ExecuteType.getPriority(type) < ExecuteType.getPriority(executorType)) {
+            executorTypes.clear();
+            executorTypes.add(type);
+        } else if (multiTypes && ExecuteType.getPriority(type) == ExecuteType.getPriority(executorType)) {
+            executorTypes.add(type);
         }
     }
 
-    public static ExecuteType getProcess_requiredExecutorType() {
-        return process_requiredExecutorType;
+    public static void setMultiTypes() {
+        multiTypes = true;
     }
 
-    public static void loadActions(final ConfigurationSection config) throws Exception {
+    public static int loadActions(final ConfigurationSection config) {
+        int count = 0;
         Set<String> keys = config.getKeys(false);
 
         ConfigurationSection actionConfig;
@@ -45,22 +58,32 @@ public class ActionLoader {
 
                 entry = Entry.getInstance(type);
 
+                if (entry.isMultiRoots()) {
+                    setMultiTypes();
+                }
                 setProcess_requiredExecutorType(entry.getExecuteType());
 
-                IExecutable executor = (IExecutable) entry.getObject(actionConfig);
+                AbstractAction executor = (AbstractAction) entry.getObject(actionConfig);
 
                 if (executor != null) {
-                    Interactions.logger.info(executor.getClass().getName());
-                    ConfigurationSection conditions = actionConfig.getConfigurationSection("conditions");
-                    List<ICondition> conditionList = ConditionLoader.getConditions(conditions);
+//                    ConfigurationSection conditions = actionConfig.getConfigurationSection("conditions");
+//                    List<AbstractCondition> conditionList = ConditionLoader.getConditions(conditions);
+//
+//                    executor.addConditions(conditionList);
 
-                    executor.addConditions(conditionList);
-
-                    ActionManager.add(process_requiredExecutorType, executor);
+                    for (String executorType : executorTypes) {
+                        ActionManager.add(executorType, executor);
+                    }
+                    ++ count;
                 }
+            } else {
+                Interactions.logger.warning("Illegal Action Type: " + key);
             }
 
-            process_requiredExecutorType = null;
+            executorTypes.clear();
+            multiTypes = false;
         }
+
+        return count;
     }
 }

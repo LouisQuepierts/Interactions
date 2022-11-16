@@ -1,16 +1,18 @@
 package net.quepierts.interactions.api;
 
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 
-public abstract class AbstractCondition implements ICondition {
-    private final boolean reverse;
+public abstract class AbstractCondition {
+    protected final boolean reverse;
 
-    public AbstractCondition(boolean reverse) {
-        this.reverse = reverse;
+    public AbstractCondition(Object[] args) {
+        this.reverse = (boolean) args[args.length - 1];
     }
 
-    @Override
-    public boolean reverse() {
-        return reverse;
+    public final boolean matches(Player player, Event event) {
+        return reverse != condition(player, event);
     }
+
+    protected abstract boolean condition(Player player, Event event);
 }

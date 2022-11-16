@@ -8,10 +8,11 @@ import org.bukkit.potion.PotionEffect;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActionGiveEffect extends AbstractAction {
+public class ActionGivePlayerEffects extends AbstractAction {
     private final List<PotionEffect> effects;
 
-    public ActionGiveEffect(Object... args) {
+    public ActionGivePlayerEffects(Object[] args) {
+        super(args);
         this.effects = new ArrayList<>();
 
         for (Object arg : args) {

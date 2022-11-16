@@ -1,6 +1,10 @@
 package net.quepierts.interactions.main.data.invnetory;
 
+import net.quepierts.interactions.Interactions;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,21 +17,34 @@ public class TargetSlot {
     private final int slotID;
     private final String name;
 
-    static {
-        new TargetSlot(40, "off_hand");
-        new TargetSlot(-1, "hand");
-        new TargetSlot(39, "head");
-        new TargetSlot(38, "chest");
-        new TargetSlot(37, "legs");
-        new TargetSlot(36, "feet");
+    public static void cleanUp() {
+        slotIDMap.clear();
+        slotNameMap.clear();
     }
 
-    public static void init() {
+    public static void register(String name, int slotID) {
+        if (!slotIDMap.containsKey(slotID)) {
+            new TargetSlot(slotID, name);
+        }
+    }
 
+    @Nullable
+    public static ItemStack getItem(Player player, TargetSlot targetSlot) {
+        if (targetSlot.equals("hand")) {
+            return player.getInventory().getItemInMainHand();
+        } else if (targetSlot.slotID != -1) {
+            return player.getInventory().getItem(targetSlot.slotID);
+        }
+
+        return null;
     }
 
     public static Collection<TargetSlot> getAvailableSlots() {
         return slotNameMap.values();
+    }
+
+    public static boolean isAvailableSlot(Object arg) {
+        return slotNameMap.containsKey((String) arg);
     }
 
     public static boolean isAvailableSlot(String name) {
@@ -43,7 +60,13 @@ public class TargetSlot {
     }
 
     public static TargetSlot getSlot(String name) {
-        return slotNameMap.get(name.toLowerCase());
+        TargetSlot slot = slotNameMap.get(name.toLowerCase());
+        if (slot == null) {
+            Interactions.logger.warning("Illegal Slot Type: " + name.toLowerCase());
+            return null;
+        }
+
+        return slot;
     }
 
     public static TargetSlot getSlot(int slotID) {
@@ -55,7 +78,10 @@ public class TargetSlot {
         this.name = name;
 
         slotNameMap.put(name, this);
-        slotIDMap.put(slotID, this);
+
+        if (slotID != -1) {
+            slotIDMap.put(slotID, this);
+        }
     }
 
     public String getName() {

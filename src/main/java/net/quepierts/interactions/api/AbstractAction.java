@@ -1,36 +1,27 @@
 package net.quepierts.interactions.api;
 
-import net.quepierts.interactions.Interactions;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
-public abstract class AbstractAction implements IExecutable {
-    private final List<ICondition> conditions;
+public abstract class AbstractAction {
+    private final List<AbstractCondition> conditions;
 
-    protected AbstractAction() {
-        conditions = new ArrayList<>();
+    protected AbstractAction(Object[] args) {
+        this.conditions = (List<AbstractCondition>) args[args.length - 1];
     }
-
-    @Override
+    
     public void execute(Player player, Event event, boolean bypass) {
         if (!bypass) {
-            for (ICondition condition : conditions) {
-                if (!condition.matches(player)) {
+            for (AbstractCondition condition : conditions) {
+                if (!condition.matches(player, event)) {
                     return;
                 }
             }
         }
 
         this.func(player, event);
-    }
-
-    @Override
-    public void addConditions(Collection<ICondition> conditions) {
-        this.conditions.addAll(conditions);
     }
 
     protected abstract void func(Player player, Event event);

@@ -13,7 +13,6 @@ import java.util.Collection;
 
 public class TaskUpdatePlayerData implements Runnable {
     private final JavaPlugin plugin;
-    private final ExecuteType typeEquipping = ExecuteType.getByName("equipping");
 
     public TaskUpdatePlayerData(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -21,6 +20,7 @@ public class TaskUpdatePlayerData implements Runnable {
 
     @Override
     public void run() {
+        // Get all the online player in server
         Collection<? extends Player> onlinePlayers = plugin.getServer().getOnlinePlayers();
         if (!onlinePlayers.isEmpty()) {
             for (Player player : onlinePlayers) {
@@ -35,11 +35,7 @@ public class TaskUpdatePlayerData implements Runnable {
         Collection<TargetSlot> availableSlots = TargetSlot.getAvailableSlots();
         PlayerInventory inventory = player.getInventory();
         for (TargetSlot slot : availableSlots) {
-            if (slot.equals("hand")) {
-                InventoryData.updatePlayerInventory(player,
-                        slot,
-                        ItemUtils.getItemName(inventory.getItemInMainHand()));
-            } else {
+            if (slot.getSlotID() != -1) {
                 InventoryData.updatePlayerInventory(player,
                         slot,
                         ItemUtils.getItemName(inventory.getItem(slot.getSlotID())));
@@ -47,7 +43,7 @@ public class TaskUpdatePlayerData implements Runnable {
         }
 
         if (InventoryData.hasAvailableItems(player)) {
-            ActionManager.execute(typeEquipping, player, null);
+            ActionManager.execute("update", player, null);
         }
     }
 }

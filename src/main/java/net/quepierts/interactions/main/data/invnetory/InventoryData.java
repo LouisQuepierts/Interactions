@@ -7,7 +7,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.Plugin;
 
 import java.util.*;
@@ -15,8 +14,8 @@ import java.util.*;
 public class InventoryData implements Listener {
     @EventHandler
     public void playerLogin(PlayerLoginEvent event) {
-        UUID id = event.getPlayer().getUniqueId();
-        playerInventoryData.put(id, new HashMap<>());
+        Player player = event.getPlayer();
+        defaultData(player);
     }
 
     @EventHandler
@@ -27,16 +26,24 @@ public class InventoryData implements Listener {
     private static final Set<String> availableItems = new HashSet<>();
     private static final Map<UUID, Map<TargetSlot, String>> playerInventoryData = new HashMap<>();
 
-    public static void init(Plugin plugin) {
+    public static void init(Interactions plugin) {
+        availableItems.clear();
+
         Collection<? extends Player> onlinePlayers = plugin.getServer().getOnlinePlayers();
         for (Player player : onlinePlayers) {
             UUID id = player.getUniqueId();
-            playerInventoryData.put(id, new HashMap<>());
+            if (!playerInventoryData.containsKey(id)) {
+                defaultData(player);
+            }
         }
     }
 
     public static void addItem(String itemName) {
         availableItems.add(itemName);
+    }
+
+    public static boolean isAvailableItem(String itemName) {
+        return availableItems.contains(itemName);
     }
 
     public static boolean hasAvailableItems(Player player) {
@@ -65,6 +72,10 @@ public class InventoryData implements Listener {
         return false;
     }
 
+    public static boolean isEmpty(Player player, TargetSlot slot) {
+        return isPlayerContains(player, slot, "AIR");
+    }
+
     public static void updatePlayerInventory(Player player, TargetSlot slot, String item) {
         UUID playerID = player.getUniqueId();
 
@@ -73,8 +84,12 @@ public class InventoryData implements Listener {
                 playerInventoryData.put(playerID, new HashMap<>());
             }
             playerInventoryData.get(playerID).put(slot, item);
-
-            Interactions.logger.info("update " + slot.getName() + ": " + item);
         }
+    }
+
+    private static void defaultData(Player player) {
+        HashMap<TargetSlot, String> value = new HashMap<>();
+        value.put(TargetSlot.getSlot("hand"), ItemUtils.getItemName(player.getInventory().getItemInMainHand()));
+        playerInventoryData.put(player.getUniqueId(), value);
     }
 }

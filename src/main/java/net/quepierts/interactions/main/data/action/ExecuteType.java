@@ -1,37 +1,27 @@
 package net.quepierts.interactions.main.data.action;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 public final class ExecuteType {
-    private static final Map<String, ExecuteType> executeTypeMap = new HashMap<>();
-
-    private final String name;
-    private final int priority;
-
-    private ExecuteType(String name, int priority) {
-        this.name = name;
-        this.priority = priority;
-    }
-
-    public int priority() {
-        return priority;
-    }
-
-    public String name() {
-        return name;
-    }
+    private static final Map<String, Integer> typeMap = new HashMap<>();
 
     public static void register(String name, int priority) {
-        executeTypeMap.put(name, new ExecuteType(name, priority));
+        typeMap.put(name, priority);
     }
 
-    public static Collection<ExecuteType> value() {
-        return executeTypeMap.values();
+    public static Collection<String> value() {
+        return typeMap.keySet();
     }
 
-    @Nullable
-    public static ExecuteType getByName(String name) {
-        return executeTypeMap.get(name);
+    public static int getPriority(String name) {
+        return typeMap.get(name);
+    }
+
+    public static boolean isAvailableType(String name) {
+        return typeMap.containsKey(name);
+    }
+
+    public static void cleanUp() {
+        typeMap.clear();
     }
 }

@@ -1,7 +1,7 @@
 package net.quepierts.interactions.main.config.loader;
 
 import net.quepierts.interactions.Interactions;
-import net.quepierts.interactions.api.ICondition;
+import net.quepierts.interactions.api.AbstractCondition;
 import net.quepierts.interactions.main.config.Entry;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Set;
 
 public class ConditionLoader {
-    public static List<ICondition> getConditions(ConfigurationSection config) throws Exception {
-        List<ICondition> conditions = new ArrayList<>();
+    public static List<AbstractCondition> getConditions(ConfigurationSection config) {
+        List<AbstractCondition> conditions = new ArrayList<>();
         Set<String> keys = config.getKeys(false);
 
         ConfigurationSection conditionConfig;
@@ -25,14 +25,19 @@ public class ConditionLoader {
                 conditionConfig = config.getConfigurationSection(key);
                 entry = Entry.getInstance(type);
 
+                if (entry.isMultiRoots()) {
+                    ActionLoader.setMultiTypes();
+                }
                 if (entry.getExecuteType() != null && !reverse) {
                     ActionLoader.setProcess_requiredExecutorType(entry.getExecuteType());
                 }
 
-                ICondition condition = (ICondition) entry.getObject(conditionConfig, reverse);
+                AbstractCondition condition = (AbstractCondition) entry.getObject(conditionConfig, reverse);
                 if (condition != null) {
                     conditions.add(condition);
                 }
+            } else {
+                Interactions.logger.warning("Unknown Condition: " + key);
             }
         }
 
