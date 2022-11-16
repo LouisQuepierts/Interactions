@@ -1,6 +1,5 @@
 # Introduction
 "Interactions" is a minecraft spigot plugin for adding actions with conditions.
-You can 
 
 # Command
 * /its reload  
@@ -37,3 +36,6 @@ actions:
         percentage: 0.5
   
 ```
+
+# Last
+The lasted version's source code will be open source, only the last version will. Sorry.
