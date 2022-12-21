@@ -12,3 +12,7 @@
   List add the Conditions
 * /its condition <ConditionName>  
   Show this condition's config structure
+
+# Usage
+In wiki:
+https://github.com/LouisQuepierts/Interactions/wiki
