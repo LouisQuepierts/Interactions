@@ -16,7 +16,7 @@ public class ConditionLoader {
 
         ConfigurationSection conditionConfig;
 
-        Entry<?> entry;
+        Entry entry;
         for (String key : keys) {
             boolean reverse = key.startsWith("!");
             String type = "condition_" + key.split("_")[0].replace("!", "");

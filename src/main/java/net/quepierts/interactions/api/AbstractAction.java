@@ -1,15 +1,18 @@
 package net.quepierts.interactions.api;
 
+import net.quepierts.interactions.main.utils.IField;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
 import java.util.List;
 
 public abstract class AbstractAction {
-    private final List<AbstractCondition> conditions;
+    private final AbstractCondition[] conditions;
+    private final IField[] fields;
 
     protected AbstractAction(Object[] args) {
-        this.conditions = (List<AbstractCondition>) args[args.length - 1];
+        this.conditions = ((List<AbstractCondition>) args[args.length - 1]).toArray(new AbstractCondition[0]);
+        this.fields = IField.getFields(args);
     }
     
     public void execute(Player player, Event event, boolean bypass) {
@@ -19,6 +22,10 @@ public abstract class AbstractAction {
                     return;
                 }
             }
+        }
+
+        for (IField updatable : fields) {
+            updatable.update(player);
         }
 
         this.func(player, event);

@@ -1,29 +1,31 @@
 package net.quepierts.interactions.main.actions;
 
 import net.quepierts.interactions.api.AbstractAction;
+import net.quepierts.interactions.main.utils.entry.IPotionEffect;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
-import org.bukkit.potion.PotionEffect;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ActionGivePlayerEffects extends AbstractAction {
-    private final List<PotionEffect> effects;
+    private final List<IPotionEffect> effects;
 
     public ActionGivePlayerEffects(Object[] args) {
         super(args);
         this.effects = new ArrayList<>();
 
         for (Object arg : args) {
-            if (arg instanceof PotionEffect) {
-                effects.add((PotionEffect) arg);
+            if (arg instanceof IPotionEffect) {
+                effects.add((IPotionEffect) arg);
             }
         }
     }
 
     @Override
     protected void func(Player player, Event event) {
-        player.addPotionEffects(effects);
+        for (IPotionEffect effect : effects) {
+            player.addPotionEffect(effect.get());
+        }
     }
 }

@@ -1,19 +1,19 @@
 package net.quepierts.interactions.main.actions;
 
 import net.quepierts.interactions.api.AbstractAction;
+import net.quepierts.interactions.main.utils.entry.IItemStack;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.inventory.ItemStack;
 
 public class ActionBlockDrop extends AbstractAction {
-    private final ItemStack itemStack;
+    private final IItemStack itemStack;
     private final boolean isSet;
     public ActionBlockDrop(Object[] args) {
         super(args);
 
-        this.itemStack = (ItemStack) args[0];
+        this.itemStack = (IItemStack) args[0];
         this.isSet = (boolean) args[1];
     }
 
@@ -25,7 +25,7 @@ public class ActionBlockDrop extends AbstractAction {
             }
 
             Location location = ((BlockBreakEvent) event).getBlock().getLocation();
-            player.getWorld().dropItem(location, itemStack);
+            player.getWorld().dropItem(location, itemStack.get());
         }
     }
 }

@@ -1,28 +1,30 @@
 package net.quepierts.interactions.main.config.objects;
 
+import net.quepierts.interactions.main.utils.IField;
+import net.quepierts.interactions.main.utils.math.threshold.Threshold;
+import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 
-public class EffectCompareInfo {
+public class EffectCompareInfo implements IField {
     public final PotionEffectType type;
-    public final int amplifier;
-    public final int duration;
+    private final Threshold<?> amplifier;
+    private final Threshold<?> duration;
 
-    public final boolean smallerAmplifier;
-    public final boolean smallerDuration;
-
-
-    public EffectCompareInfo(Object[] args) {
+    public EffectCompareInfo(Object[] args) throws Exception {
         this.type = PotionEffectType.getByName((String) args[0]);
-        this.amplifier = (int) args[1];
-        this.duration = (int) args[2];
-        this.smallerAmplifier = (boolean) args[3];
-        this.smallerDuration = (boolean) args[4];
+        this.amplifier = Threshold.cast(args[1], Integer.class);
+        this.duration = Threshold.cast(args[2], Integer.class);
     }
 
     public boolean compare(PotionEffect effect) {
-        return effect.getType().equals(this.type) &&
-                smallerAmplifier == (effect.getAmplifier() < this.amplifier) &&
-                smallerDuration == (effect.getDuration() < this.duration);
+        return effect.getType().equals(this.type) && amplifier.compare(effect.getAmplifier()) && duration.compare(effect.getDuration());
+    }
+
+    @Override
+    public void update(@NotNull Player player) {
+        amplifier.update(player);
+        duration.update(player);
     }
 }

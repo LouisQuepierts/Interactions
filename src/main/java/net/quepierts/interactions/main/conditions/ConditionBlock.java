@@ -2,12 +2,12 @@ package net.quepierts.interactions.main.conditions;
 
 import net.quepierts.interactions.api.AbstractCondition;
 import net.quepierts.interactions.main.utils.BlockUtils;
+import net.quepierts.interactions.main.utils.math.vector.Vector;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.util.Vector;
 
 public class ConditionBlock extends AbstractCondition {
     public static ConditionBlock getPlayer(Object[] args) {
@@ -28,7 +28,6 @@ public class ConditionBlock extends AbstractCondition {
         this.block = (String) args[0];
         this.vector = (Vector) args[1];
 
-
         this.target = target;
     }
 
@@ -46,7 +45,7 @@ public class ConditionBlock extends AbstractCondition {
     }
 
     private boolean detect(Location location) {
-        location = location.add(vector);
+        vector.addToLocation(location);
         Block block = location.getBlock();
 
         return BlockUtils.isSame(block, this.block);

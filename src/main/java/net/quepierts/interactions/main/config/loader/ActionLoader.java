@@ -45,7 +45,7 @@ public class ActionLoader { ;
 
         ConfigurationSection actionConfig;
 
-        Entry<?> entry;
+        Entry entry;
         for (String key : keys) {
             String type = "action_" + key.split("_")[0];
 

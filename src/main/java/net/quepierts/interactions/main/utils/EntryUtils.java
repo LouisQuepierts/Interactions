@@ -1,25 +1,24 @@
 package net.quepierts.interactions.main.utils;
 
-import dev.lone.itemsadder.api.CustomBlock;
+import net.quepierts.interactions.main.data.AvailableIDs;
 import net.quepierts.interactions.main.data.Dependency;
+import net.quepierts.interactions.main.utils.entry.IPotionEffect;
+import net.quepierts.interactions.main.utils.math.number.IMutableNumber;
+import net.quepierts.interactions.main.utils.math.vector.Vector;
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 
 public class EntryUtils {
     // Create a PotionEffect object by Object array
-    public static PotionEffect getPotionEffect(Object... args) {
-        PotionEffectType type = PotionEffectType.getByName((String) args[0]);
-        int level = (int) args[1];
-        int duration = (int) args[2];
-
-        return new PotionEffect(type, duration, level);
+    public static IPotionEffect getPotionEffect(Object... args) throws Exception {
+        return new IPotionEffect(PotionEffectType.getByName((String) args[0]),
+                IMutableNumber.cast(args[1], Integer.class),
+                IMutableNumber.cast(args[2], Integer.class));
     }
 
     // Define is target effect name is an available effect type
@@ -38,34 +37,52 @@ public class EntryUtils {
 
     // Get DamageCause by name
     public static EntityDamageEvent.DamageCause getDamageCause(String id) {
-        for (EntityDamageEvent.DamageCause value : EntityDamageEvent.DamageCause.values()) {
-            if (value.name().equalsIgnoreCase(id)) {
-                return value;
-            }
+        try {
+            return EntityDamageEvent.DamageCause.valueOf(id);
+        } catch (Exception e) {
+            return null;
         }
-
-        return null;
     }
 
     public static boolean isBlock(String id) {
+        if (AvailableIDs.availableBlock(id)) {
+            return true;
+        }
+
         Material material = Material.getMaterial(id);
         boolean flag = material != null && material.isBlock();
 
-        if (Dependency.isItemsAdderLoaded()) {
-            if (CustomBlock.getInstance(id) != null) {
-                flag = true;
+        if (id.contains(":")) {
+            if (Dependency.isItemsAdderLoaded()) {
+                if (ItemsAdderUtils.isBlock(id)) {
+                    flag = true;
+                }
             }
         }
+
+        if (flag) AvailableIDs.addBlock(id);
 
         return flag;
     }
 
     public static Vector getVector(Object... args) {
-        return new Vector((double) args[0], (double) args[1], (double) args[2]);
+        return new Vector((IMutableNumber<?>) args[0], (IMutableNumber<?>) args[1], (IMutableNumber<?>) args[2]);
     }
 
     public static boolean isEntityType(String id) {
-        return EntityType.fromName(id) != null;
+        boolean flag = EntityType.fromName(id) != null;
+
+        if (id.contains(":")) {
+            if (Dependency.isItemsAdderLoaded()) {
+                if (ItemsAdderUtils.isEntity(id)) {
+                    flag = true;
+                }
+            }
+        }
+
+        if (flag) AvailableIDs.addEntity(id);
+
+        return flag;
     }
 
     public static Action getInteractAction(String id) {

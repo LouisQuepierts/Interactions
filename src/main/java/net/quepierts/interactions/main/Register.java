@@ -6,10 +6,12 @@ import net.quepierts.interactions.main.conditions.*;
 import net.quepierts.interactions.main.config.objects.EffectCompareInfo;
 import net.quepierts.interactions.main.config.Branch;
 import net.quepierts.interactions.main.config.Entry;
+import net.quepierts.interactions.main.config.objects.VarData;
 import net.quepierts.interactions.main.data.action.ExecuteType;
 import net.quepierts.interactions.main.data.invnetory.TargetSlot;
 import net.quepierts.interactions.main.utils.EntryUtils;
 import net.quepierts.interactions.main.utils.ItemUtils;
+import net.quepierts.interactions.main.utils.math.threshold.Threshold;
 
 import static net.quepierts.interactions.main.config.Branch.EnumBranchType.*;
 
@@ -28,6 +30,7 @@ public class Register {
         TargetSlot.register("feet", 36);
 
 //      Register Execute Types
+        ExecuteType.register("kill", 0);
         ExecuteType.register("damaged", 0);
         ExecuteType.register("attack", 0);
         ExecuteType.register("harvest", 0);
@@ -35,16 +38,15 @@ public class Register {
         ExecuteType.register("update", 1);
 
 //      Register Branches
-        Branch.register("amountD", DOUBLE, true);
-        Branch.register("chance", DOUBLE, true);
-        Branch.register("threshold", DOUBLE, false, -1.0);
-        Branch.register("x", DOUBLE, false, 0.0);
-        Branch.register("y", DOUBLE, false, 0.0);
-        Branch.register("z", DOUBLE, false, 0.0);
+        Branch.register("amount", NUMBER, true);
 
-        Branch.register("amountI", INT, false, 0);
-        Branch.register("duration", INT, false, 0);
-        Branch.register("level", INT, false, 0);
+        Branch.register("chance", NUMBER, true);
+        Branch.register("x", NUMBER, false, 0.0d);
+        Branch.register("y", NUMBER, false, 0.0d);
+        Branch.register("z", NUMBER, false, 0.0d);
+        
+        Branch.register("duration", NUMBER, false, 0);
+        Branch.register("amplifier", NUMBER, false, 0);
 
         Branch.register("compare", BOOLEAN, false, false);
         Branch.register("smaller", BOOLEAN, false, false);
@@ -52,9 +54,8 @@ public class Register {
         Branch.register("percentage", BOOLEAN, false, false);
         Branch.register("isSet", BOOLEAN, false, false);
         Branch.register("target", BOOLEAN, false, false);
-        Branch.register("smallerLevel", BOOLEAN, false, false);
-        Branch.register("smallerDuration", BOOLEAN, false, false);
         Branch.register("drop", BOOLEAN, false, false);
+        Branch.register("global", BOOLEAN, false, false);
 
         Branch.register("name", STRING, true);
         Branch.register("item", STRING, true).<String>bind(ItemUtils::isAvailableItem);
@@ -67,21 +68,39 @@ public class Register {
         Branch.register("blockFace", STRING, false, null).bind(EntryUtils::isBlockFace);
         Branch.register("biome", STRING, true).bind(EntryUtils::isBiome);
 
-        Branch.register("lore", STRING_ARRAY, true);
+//        Branch.register("lore", STRING_ARRAY, true);
 
-        Branch.register("varAmountName", STRING, true);
-        Branch.register("varTargetName", STRING, true);
-
-        Branch.register("var", SYSTEM, true);
+        Branch.register("var", STRING, true).<String>bind(VarData::isLegalValue);
         Branch.register("conditions", CONDITIONS, true);
 
+
         Entry.getRegistrar("potion")
-                .addBranch(Branch.getInstance("effectType", "level", "duration"))
+                .addBranch(Branch.getInstance("effectType", "amplifier", "duration"))
                 .bind(EntryUtils::getPotionEffect)
                 .asBranch().register();
 
+//        Entry.getRegistrar("threshold")
+//                .addBranch(Branch.getInstance("amountD", "smaller", "equal"))
+//                .bind(Threshold::new)
+//                .asBranch().register();
+
+        Entry.getRegistrar("threshold")
+                .addBranch(Branch.getInstance("amount", "smaller", "equal"))
+                .bind(Threshold::new)
+                .asBranch().register();
+
+        Entry.getRegistrar("amplifierThreshold")
+                .addBranch(Branch.getInstance("amount", "smaller", "equal"))
+                .bind(Threshold::new)
+                .asBranch().register();
+
+        Entry.getRegistrar("durationThreshold")
+                .addBranch(Branch.getInstance("amount", "smaller", "equal"))
+                .bind(Threshold::new)
+                .asBranch().register();
+
         Entry.getRegistrar("effectInfo")
-                .addBranch(Branch.getInstance("effectType", "level", "duration", "smallerLevel", "smallerDuration"))
+                .addBranch(Branch.getInstance("effectType", "amplifierThreshold", "durationThreshold"))
                 .bind(EffectCompareInfo::new)
                 .asBranch().register();
 
@@ -91,8 +110,13 @@ public class Register {
                 .asBranch().register();
 
         Entry.getRegistrar("itemStack")
-                .addBranch(Branch.getInstance("item", "amountI"))
+                .addBranch(Branch.getInstance("item", "amount"))
                 .bind(ItemUtils::getItemStack)
+                .asBranch().register();
+
+        Entry.getRegistrar("varData")
+                .addBranch(Branch.getInstance("name", "global"))
+                .bind(VarData::getInstance)
                 .asBranch().register();
 
 //      Register Conditions
@@ -106,7 +130,7 @@ public class Register {
                 .bind(ConditionChance::new).register();
 
         Entry.getRegistrar(ConditionDamage.class)
-                .addBranch(Branch.getInstance("threshold", "smaller", "equal", "damageCause"))
+                .addBranch(Branch.getInstance("threshold", "damageCause"))
                 .asRoot("attack")
                 .bind(ConditionDamage::new).registerSub("Attack", true)
                 .asRoot("damaged")
@@ -124,7 +148,7 @@ public class Register {
                 .bind(ConditionEffects::getTarget).registerSub("Target", true);
 
         Entry.getRegistrar(ConditionHealth.class)
-                .addBranch(Branch.getInstance("threshold", "compare", "smaller", "equal"))
+                .addBranch(Branch.getInstance("threshold", "compare"))
                 .bind(ConditionHealth::getPlayer).registerSub("Player", true)
                 .asRoot("attack")
                 .bind(ConditionHealth::getTarget).registerSub("Target", true);
@@ -161,6 +185,38 @@ public class Register {
                 .addBranch(Branch.getInstance("biome", "vector"))
                 .bind(ConditionBiome::new).register();
 
+        Entry.getRegistrar(ConditionEntityType.class)
+                .addBranch("entityType")
+                .asRoot("attack")
+                .bind(ConditionEntityType::getTarget).registerSub("Target", true)
+                .asRoot("damaged")
+                .bind(ConditionEntityType::getAttacker).registerSub("Attacker", true);
+
+        Entry.getRegistrar(ConditionRidingEntityType.class)
+                .addBranch("entityType")
+                .asRoot("update").bind(ConditionRidingEntityType.CPlayer::new).registerSub("Player", true)
+                .asRoot("attack").bind(ConditionRidingEntityType.CTarget::new).registerSub("Target", true)
+                .asRoot("damaged").bind(ConditionRidingEntityType.CAttacker::new).registerSub("Attacker", true);
+
+        Entry.getRegistrar(ConditionVar.class)
+                .addBranch(Branch.getInstance("varData", "var"))
+                .asRoot("update")
+                .bind(ConditionVar::new).register();
+
+        Entry.getRegistrar(ConditionVarBoolean.class)
+                .addBranch(Branch.getInstance("varData", "var"))
+                .asRoot("update")
+                .bind(ConditionVarBoolean::new).register();
+
+        Entry.getRegistrar(ConditionVarString.class)
+                .addBranch(Branch.getInstance("varData", "var"))
+                .asRoot("update")
+                .bind(ConditionVarString::new).register();
+
+        Entry.getRegistrar(ConditionTimeDelta.class)
+                .addBranch(Branch.getInstance("name", "threshold"))
+                .bind(ConditionTimeDelta::new).register();
+
 //      Register Actions
         Entry.getRegistrar(ActionGivePlayerEffects.class)
                 .addBranch("potion")
@@ -171,13 +227,13 @@ public class Register {
                 .bind(ActionRemovePlayerEffects::new).register();
 
         Entry.getRegistrar(ActionDamageManipulate.class)
-                .addBranch(Branch.getInstance("amountD", "percentage"))
+                .addBranch(Branch.getInstance("amount", "percentage"))
                 .bind(ActionDamageManipulate::new)
                 .asRoot("attack").registerSub("Attack", true)
                 .asRoot("damaged").registerSub("Receive", true);
 
         Entry.getRegistrar(ActionDurabilityManipulate.class)
-                .addBranch(Branch.getInstance("slot", "amountD", "percentage"))
+                .addBranch(Branch.getInstance("slot", "amount", "percentage"))
                 .bind(ActionDurabilityManipulate::new).register();
 
         Entry.getRegistrar(ActionBlockDrop.class)
@@ -186,7 +242,7 @@ public class Register {
                 .bind(ActionBlockDrop::new).register();
 
         Entry.getRegistrar(ActionFoodLevelManipulate.class)
-                .addBranch(Branch.getInstance("amountI"))
+                .addBranch(Branch.getInstance("amount"))
                 .bind(ActionFoodLevelManipulate::getPlayer).registerSub("Player", true)
                 .asRoot("attack")
                 .bind(ActionFoodLevelManipulate::getTarget).registerSub("Target", true);
@@ -194,6 +250,17 @@ public class Register {
         Entry.getRegistrar(ActionGiveItem.class)
                 .addBranch("itemStack")
                 .bind(ActionGiveItem::new).register();
+
+        Entry.getRegistrar(ActionApplyDamage.class).
+                addBranch(Branch.getInstance("amount", "percentage", "damageCause"))
+                .bind(ActionApplyDamage::new).register();
+
+        Entry.getRegistrar(ActionVarManipulate.class).addBranch(Branch.getInstance("varData", "var"))
+                .bind(ActionVarManipulate::new).register();
+
+        Entry.getRegistrar(ActionVarNumberManipulate.class)
+                .addBranch(Branch.getInstance("varData", "amount"))
+                .bind(ActionVarNumberManipulate::new).register();
 
         Interactions.logger.info("Register Finished");
     }

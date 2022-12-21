@@ -5,6 +5,10 @@ import org.bukkit.Bukkit;
 public class Dependency {
     private static boolean iaLoaded;
 
+    public static void setIaLoaded(boolean loaded) {
+        iaLoaded = loaded;
+    }
+
     public static void check() {
         iaLoaded = Bukkit.getPluginManager().isPluginEnabled("ItemsAdder");
     }

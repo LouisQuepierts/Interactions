@@ -1,34 +1,27 @@
 package net.quepierts.interactions.main.data.invnetory;
 
 import net.quepierts.interactions.Interactions;
+import net.quepierts.interactions.main.data.AvailableIDs;
 import net.quepierts.interactions.main.utils.ItemUtils;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.plugin.Plugin;
 
 import java.util.*;
 
-public class InventoryData implements Listener {
-    @EventHandler
-    public void playerLogin(PlayerLoginEvent event) {
+public class InventoryData {
+    public static void playerLogin(PlayerLoginEvent event) {
         Player player = event.getPlayer();
         defaultData(player);
     }
 
-    @EventHandler
-    public void playerQuit(PlayerQuitEvent event) {
+    public static void playerQuit(PlayerQuitEvent event) {
         playerInventoryData.remove(event.getPlayer().getUniqueId());
     }
 
-    private static final Set<String> availableItems = new HashSet<>();
     private static final Map<UUID, Map<TargetSlot, String>> playerInventoryData = new HashMap<>();
 
     public static void init(Interactions plugin) {
-        availableItems.clear();
-
         Collection<? extends Player> onlinePlayers = plugin.getServer().getOnlinePlayers();
         for (Player player : onlinePlayers) {
             UUID id = player.getUniqueId();
@@ -38,19 +31,11 @@ public class InventoryData implements Listener {
         }
     }
 
-    public static void addItem(String itemName) {
-        availableItems.add(itemName);
-    }
-
-    public static boolean isAvailableItem(String itemName) {
-        return availableItems.contains(itemName);
-    }
-
     public static boolean hasAvailableItems(Player player) {
         Map<TargetSlot, String> items = playerInventoryData.get(player.getUniqueId());
 
         for (String item : items.values()) {
-            if (availableItems.contains(item)) {
+            if (AvailableIDs.availableItem(item)) {
                 return true;
             }
         }

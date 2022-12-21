@@ -1,21 +1,21 @@
 package net.quepierts.interactions.main.actions;
 
 import net.quepierts.interactions.api.AbstractAction;
+import net.quepierts.interactions.main.utils.entry.IItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
-import org.bukkit.inventory.ItemStack;
 
 public class ActionGiveItem extends AbstractAction {
-    private final ItemStack itemStack;
+    private final IItemStack itemStack;
 
     public ActionGiveItem(Object[] args) {
         super(args);
 
-        itemStack = (ItemStack) args[0];
+        itemStack = (IItemStack) args[0];
     }
 
     @Override
     protected void func(Player player, Event event) {
-        player.getInventory().addItem();
+        player.getInventory().addItem(itemStack.get());
     }
 }

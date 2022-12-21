@@ -1,5 +1,6 @@
 package net.quepierts.interactions.main.config;
 
+import net.quepierts.interactions.Interactions;
 import net.quepierts.interactions.api.AbstractAction;
 import net.quepierts.interactions.api.AbstractCondition;
 import org.bukkit.command.CommandSender;
@@ -8,10 +9,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public final class Entry<T> {
-    private static final Map<String, Entry<?>> entryMap = new HashMap<>();
-    private static final Map<String, Entry<?>> actions = new HashMap<>();
-    private static final Map<String, Entry<?>> conditions = new HashMap<>();
+public final class Entry {
+    private static final Map<String, Entry> entryMap = new TreeMap<>();
+    private static final Map<String, Entry> actions = new TreeMap<>();
+    private static final Map<String, Entry> conditions = new TreeMap<>();
 
     public static boolean hasEntry(String id) {
         return entryMap.containsKey(id);
@@ -27,7 +28,7 @@ public final class Entry<T> {
 
     public static boolean printAction(CommandSender sender, String actionName) {
         sender.sendMessage("§8[§eInteractions Config§8]");
-        Entry<?> entry = actions.get(actionName);
+        Entry entry = actions.get(actionName);
         if (entry != null) {
             entry.print(sender, 0);
             return true;
@@ -38,7 +39,7 @@ public final class Entry<T> {
 
     public static boolean printCondition(CommandSender sender, String conditionName) {
         sender.sendMessage("§8[§eInteractions Config§8]");
-        Entry<?> entry = conditions.get(conditionName);
+        Entry entry = conditions.get(conditionName);
         if (entry != null) {
             entry.print(sender, 0);
             return true;
@@ -74,33 +75,33 @@ public final class Entry<T> {
         return entryMap.get(id);
     }
 
-    public static <T> Registrar<T> getRegistrar(String name) {
-        return new Registrar<>(name, 0);
+    public static Registrar getRegistrar(String name) {
+        return new Registrar(name, 0);
     }
 
-    public static <T> Registrar<T> getRegistrar(Class<T> clazz) {
+    public static Registrar getRegistrar(Class<?> clazz) {
         return getRegistrar(clazz, clazz.getSimpleName());
     }
 
-    public static <T> Registrar<T> getRegistrar(Class<T> clazz, String name) {
+    public static Registrar getRegistrar(Class<?> clazz, String name) {
         if (AbstractAction.class.isAssignableFrom(clazz)) {
-            Registrar<T> action = new Registrar<>("action_" + name.replace("Action", ""), 1);
+            Registrar action = new Registrar("action_" + name.replace("Action", ""), 1);
             return action;
         } else if (AbstractCondition.class.isAssignableFrom(clazz)) {
-            return new Registrar<>("condition_" + name.replace("Condition", ""), 2);
+            return new Registrar("condition_" + name.replace("Condition", ""), 2);
         } else {
-            return new Registrar<>(name, 0);
+            return new Registrar(name, 0);
         }
     }
 
-    public static void register(String id, Entry<?> entry) {
+    public static void register(String id, Entry entry) {
         if (!entryMap.containsKey(id)) {
             entryMap.put(id, entry);
         }
     }
 
     private final String name;
-    private IConstructor<T> constructor;
+    private IConstructor constructor;
 
     private Branch[] branches;
     private String executeType = null;
@@ -117,6 +118,9 @@ public final class Entry<T> {
         constructor = entry.constructor;
         executeType = entry.executeType;
         multiRoots = entry.multiRoots;
+    }
+
+    public static void close() {
     }
 
     public String getName() {
@@ -139,37 +143,53 @@ public final class Entry<T> {
         }
     }
 
-    public T getObject(Object... args) {
-        return constructor.construct(args);
-    }
-
     @Nullable
-    public T getObject(ConfigurationSection config) {
+    public Object getObject(ConfigurationSection config) {
         List<Object> branchInfo = Branch.getBranchInfo(config, branches);
         if (branchInfo == null) {
+            Interactions.logger.warning("Illegal or missing values for entry: " + config.getName());
             return null;
         }
 
-        return constructor.construct(branchInfo.toArray(new Object[0]));
+        try {
+            return constructor.construct(branchInfo.toArray(new Object[0]));
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     @Nullable
-    public T getObject(ConfigurationSection config, Object... extraArgs) {
+    public Object getObject(ConfigurationSection config, Object... extraArgs) {
         List<Object> branchInfo = Branch.getBranchInfo(config, branches);
         if (branchInfo == null) {
+            Interactions.logger.warning("Illegal or missing values for entry: " + config.getName());
             return null;
         }
 
         Collections.addAll(branchInfo, extraArgs);
-        return constructor.construct(branchInfo.toArray(new Object[0]));
+        try {
+            return constructor.construct(branchInfo.toArray(new Object[0]));
+        } catch (Exception ignored) {
+            Interactions.logger.warning("Errors due to Illegal or Missing value during constructing entry: " + config.getName());
+            return null;
+        }
     }
 
-    public String  getExecuteType() {
+    @Nullable
+    public Object getObject(Object... args) {
+        try {
+            return constructor.construct(args);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    public String getExecuteType() {
         return executeType;
     }
 
-    public final static class Registrar<T> {
-        private final Entry<T> entry;
+    public final static class Registrar {
+        private final Entry entry;
         private final List<Branch> branches = new ArrayList<>();
         private final int flag;
 
@@ -177,50 +197,50 @@ public final class Entry<T> {
         private boolean asBranch = false;
 
         private Registrar(String name, int flag) {
-            entry = new Entry<>(name);
+            entry = new Entry(name);
             this.flag = flag;
         }
 
-        public Registrar<T> addBranch(Branch branch) {
+        public Registrar addBranch(Branch branch) {
             if (!branches.contains(branch)) {
                 branches.add(branch);
             }
             return this;
         }
 
-        public Registrar<T> addBranch(Branch... branch) {
+        public Registrar addBranch(Branch... branch) {
             for (Branch b : branch) {
                 addBranch(b);
             }
             return this;
         }
 
-        public Registrar<T> addBranch(String id) {
+        public Registrar addBranch(String id) {
             addBranch(Branch.getInstance(id));
             return this;
         }
 
-        public Registrar<T> subEntry(Entry entry) {
+        public Registrar subEntry(Entry entry) {
             Branch.getInstance(entry);
             return this;
         }
 
-        public Registrar<T> asRoot(String type) {
+        public Registrar asRoot(String type) {
             entry.executeType = type;
             return this;
         }
 
-        public Registrar<T> multiRoots() {
+        public Registrar multiRoots() {
             entry.multiRoots = true;
             return this;
         }
 
-        public Registrar<T> asBranch() {
+        public Registrar asBranch() {
             asBranch = true;
             return this;
         }
 
-        public Registrar<T> bind(IConstructor<T> iConstructor) {
+        public Registrar bind(IConstructor iConstructor) {
             entry.constructor = iConstructor;
             return this;
         }
@@ -238,7 +258,7 @@ public final class Entry<T> {
             }
         }
 
-        public Registrar<T> registerSub(String subName, boolean prefix) {
+        public Registrar registerSub(String subName, boolean prefix) {
             String name = this.entry.name;
             if (prefix) {
                 String[] split = name.split("_");
@@ -247,7 +267,7 @@ public final class Entry<T> {
                 name += subName;
             }
 
-            Entry<T> entry = new Entry<>(name, this.entry);
+            Entry entry = new Entry(name, this.entry);
 
             add(this, entry, flag);
             entry.branches = branches.toArray(new Branch[0]);
@@ -259,7 +279,7 @@ public final class Entry<T> {
             return this;
         }
 
-        private static void add(Registrar<?> registrar, Entry<?> entry, int flag) {
+        private static void add(Registrar registrar, Entry entry, int flag) {
             entryMap.put(entry.name, entry);
 
             switch (flag) {

@@ -2,10 +2,10 @@ package net.quepierts.interactions.main.conditions;
 
 import net.quepierts.interactions.api.AbstractCondition;
 import net.quepierts.interactions.main.utils.EntryUtils;
+import net.quepierts.interactions.main.utils.math.vector.Vector;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
-import org.bukkit.util.Vector;
 
 public class ConditionBiome extends AbstractCondition {
     private final Biome biome;
@@ -19,6 +19,6 @@ public class ConditionBiome extends AbstractCondition {
 
     @Override
     protected boolean condition(Player player, Event event) {
-        return player.getLocation().add(vector).getBlock().getBiome().equals(biome);
+        return vector.addToLocation(player.getLocation()).getBlock().getBiome().equals(biome);
     }
 }

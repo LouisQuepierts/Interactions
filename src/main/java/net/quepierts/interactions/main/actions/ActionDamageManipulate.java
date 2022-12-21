@@ -1,18 +1,19 @@
 package net.quepierts.interactions.main.actions;
 
 import net.quepierts.interactions.api.AbstractAction;
+import net.quepierts.interactions.main.utils.math.number.IMutableNumber;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDamageEvent;
 
 public class ActionDamageManipulate extends AbstractAction {
-    private final double amount;
+    private final IMutableNumber<?> amount;
     private final boolean percentage;
 
-    public ActionDamageManipulate(Object[] args) {
+    public ActionDamageManipulate(Object[] args) throws Exception {
         super(args);
 
-        this.amount = (double) args[0];
+        this.amount = IMutableNumber.cast(args[0], Double.class, Float.class);
         this.percentage = (boolean) args[1];
     }
 
@@ -22,21 +23,13 @@ public class ActionDamageManipulate extends AbstractAction {
             double result;
             EntityDamageEvent event = (EntityDamageEvent) e;
             if (percentage) {
-                result = 1 + this.amount;
+                result = 1.0d + this.amount.doubleValue();
 
-                if (result > 0) {
-                    event.setDamage(event.getDamage() * result);
-                } else {
-                    event.setDamage(0);
-                }
+                event.setDamage(Math.max(event.getDamage() * result, 0.0d));
             } else {
-                result = event.getDamage() + this.amount;
+                result = event.getDamage() + this.amount.doubleValue();
 
-                if (result > 0) {
-                    event.setDamage(result);
-                } else {
-                    event.setDamage(0);
-                }
+                event.setDamage(Math.max(result, 0.0d));
             }
         }
     }

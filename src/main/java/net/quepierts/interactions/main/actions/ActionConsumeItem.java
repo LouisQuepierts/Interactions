@@ -2,7 +2,6 @@ package net.quepierts.interactions.main.actions;
 
 import net.quepierts.interactions.api.AbstractAction;
 import net.quepierts.interactions.main.data.invnetory.TargetSlot;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.ItemStack;

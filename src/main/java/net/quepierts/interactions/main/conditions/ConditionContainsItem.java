@@ -18,7 +18,6 @@ public class ConditionContainsItem extends AbstractCondition {
 
     @Override
     public boolean condition(Player player, Event event) {
-        boolean playerContains = InventoryData.isPlayerContains(player, slot, item);
-        return playerContains;
+        return InventoryData.isPlayerContains(player, slot, item);
     }
 }

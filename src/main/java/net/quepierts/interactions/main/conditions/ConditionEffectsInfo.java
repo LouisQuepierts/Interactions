@@ -1,5 +1,6 @@
 package net.quepierts.interactions.main.conditions;
 
+import com.google.common.collect.ImmutableMap;
 import net.quepierts.interactions.api.AbstractCondition;
 import net.quepierts.interactions.main.config.objects.EffectCompareInfo;
 import org.bukkit.entity.Entity;
@@ -28,13 +29,16 @@ public class ConditionEffectsInfo extends AbstractCondition {
     private ConditionEffectsInfo(Object[] args, boolean target) {
         super(args);
 
-        this.map = new HashMap<>();
+        ImmutableMap.Builder<PotionEffectType, EffectCompareInfo> builder = new ImmutableMap.Builder<>();
+
 
         for (Object arg : args) {
             if (arg instanceof EffectCompareInfo) {
-                map.put(((EffectCompareInfo) arg).type, (EffectCompareInfo) arg);
+                builder.put(((EffectCompareInfo) arg).type, (EffectCompareInfo) arg);
             }
         }
+
+        map = builder.build();
 
         this.target = target;
     }

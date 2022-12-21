@@ -1,30 +1,27 @@
 package net.quepierts.interactions.main.utils;
 
-import dev.lone.itemsadder.api.CustomStack;
+import net.quepierts.interactions.main.data.AvailableIDs;
 import net.quepierts.interactions.main.data.Dependency;
-import net.quepierts.interactions.main.data.invnetory.InventoryData;
+import net.quepierts.interactions.main.utils.entry.IItemStack;
+import net.quepierts.interactions.main.utils.math.number.IMutableNumber;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 public class ItemUtils {
-    public static ItemStack getItemStack(Object[] args) {
+    public static IItemStack getItemStack(Object[] args) throws Exception {
         String name = (String) args[0];
-        int amount = (int) args[1];
+        IMutableNumber<?> number = IMutableNumber.cast(args[1], Integer.class);
         ItemStack itemStack = null;
 
         if (Dependency.isItemsAdderLoaded()) {
-            CustomStack instance = CustomStack.getInstance(name);
-            if (instance != null) {
-                itemStack = instance.getItemStack();
-            }
+            itemStack = ItemsAdderUtils.getItemStack(name);
         } 
         
         if (itemStack == null) {
             itemStack = new ItemStack(Material.getMaterial(name));
         }
 
-        itemStack.setAmount(amount);
-        return itemStack;
+        return new IItemStack(itemStack, number);
     }
 
     // Get item name by itemStack
@@ -34,10 +31,10 @@ public class ItemUtils {
         }
 
         if (Dependency.isItemsAdderLoaded()) {
-            CustomStack iaStack = CustomStack.byItemStack(itemStack);
+            String name = ItemsAdderUtils.getItemName(itemStack);
 
-            if (iaStack != null) {
-                return iaStack.getNamespacedID();
+            if (name != null) {
+                return name;
             }
         }
 
@@ -46,19 +43,21 @@ public class ItemUtils {
 
     //Define is target item is an available item
     public static boolean isAvailableItem(String itemName) {
-        if (InventoryData.isAvailableItem(itemName)) {
+        if (AvailableIDs.availableItem(itemName)) {
             return true;
         }
 
         boolean flag = Material.getMaterial(itemName) != null;
 
-        if (Dependency.isItemsAdderLoaded()) {
-            if (CustomStack.getInstance(itemName) != null) {
-                flag = true;
+        if (itemName.contains(":")) {
+            if (Dependency.isItemsAdderLoaded()) {
+                if (ItemsAdderUtils.isItem(itemName)) {
+                    flag = true;
+                }
             }
         }
 
-        if (flag) InventoryData.addItem(itemName);
+        if (flag) AvailableIDs.addItem(itemName);
         return flag;
     }
 

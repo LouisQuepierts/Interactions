@@ -1,17 +1,17 @@
 package net.quepierts.interactions;
 
 import net.quepierts.interactions.main.CommandInteractions;
-import net.quepierts.interactions.main.EventListener;
+import net.quepierts.interactions.main.listener.EventListener;
 import net.quepierts.interactions.main.Register;
 import net.quepierts.interactions.main.config.Branch;
 import net.quepierts.interactions.main.config.ConfigManager;
 import net.quepierts.interactions.main.config.Entry;
 import net.quepierts.interactions.main.data.Dependency;
-import net.quepierts.interactions.main.data.action.ActionManager;
 import net.quepierts.interactions.main.data.action.ExecuteType;
-import net.quepierts.interactions.main.data.invnetory.InventoryData;
 import net.quepierts.interactions.main.data.invnetory.TargetSlot;
+import net.quepierts.interactions.main.listener.ItemsAdderEventListener;
 import net.quepierts.interactions.main.runtime.TaskUpdatePlayerData;
+import net.quepierts.interactions.main.utils.Time;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,7 +21,7 @@ import java.util.Random;
 import java.util.logging.Logger;
 
 public final class Interactions extends JavaPlugin {
-    public static final File configPath = new File("plugins\\Interactions\\actions");
+    public static final File configPath = new File("plugins\\Interactions\\configs");
     public static Logger logger;
     public static Random random = new Random();
 
@@ -36,10 +36,10 @@ public final class Interactions extends JavaPlugin {
         instance = this;
 
         logger = this.getLogger();
-        logger.info("Initialization Start");
+        logger.info("Initialization Start " + Time.getRuntimeMillis());
 
-        this.getServer().getPluginManager().registerEvents(new EventListener(), this);
-        this.getServer().getPluginManager().registerEvents(new InventoryData(), this);
+        Dependency.check();
+        this.registerListeners();
         this.getServer().getScheduler().runTaskTimer(this, new TaskUpdatePlayerData(this), 0, 20);
 
         PluginCommand pluginCommand = Bukkit.getPluginCommand("interactions");
@@ -66,15 +66,24 @@ public final class Interactions extends JavaPlugin {
         logger.info("Reloading Configs & Registries Finished");
     }
 
+    private void registerListeners() {
+        this.getServer().getPluginManager().registerEvents(new EventListener(this), this);
+
+        if (Dependency.isItemsAdderLoaded()) {
+            this.getServer().getPluginManager().registerEvents(new ItemsAdderEventListener(), this);
+        }
+    }
+
     private void load() {
         ExecuteType.cleanUp();
         TargetSlot.cleanUp();
         Branch.cleanUp();
         Entry.cleanUp();
 
-        Dependency.check();
-
         Register.loadStatic();
+
+        Branch.close();
+        Entry.close();
         ConfigManager.init(this);
     }
 }

@@ -3,22 +3,27 @@ package net.quepierts.interactions.main.config;
 import net.quepierts.interactions.Interactions;
 import net.quepierts.interactions.api.AbstractCondition;
 import net.quepierts.interactions.main.config.loader.ConditionLoader;
+import net.quepierts.interactions.main.data.Registry;
+import net.quepierts.interactions.main.utils.math.number.IMutableNumber;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
 public final class Branch {
-    private static final Map<String, Branch> branchMap = new HashMap<>();
+    private static final Registry<Branch> registry = new Registry<>("Branch");
 
     public static void cleanUp() {
-        branchMap.clear();
+        registry.cleanUp();
     }
 
-    public static Branch register(Entry<?> entry, boolean required) {
+    public static void close() {
+        registry.close();
+    }
+
+    public static Branch register(Entry entry, boolean required) {
         String name = entry.getName();
         return register(name, EnumBranchType.ENTRY, required);
     }
@@ -28,24 +33,28 @@ public final class Branch {
     }
 
     public static Branch register(String id, EnumBranchType type, boolean required, Object def) {
-        if (!branchMap.containsKey(id)) {
-            Branch value = new Branch(id, type, required, def);
-            branchMap.put(id, value);
-            return value;
+        return registry.register(id, new Branch(id, type, required, def));
+    }
+
+    public static Branch register(String id, String parentId, boolean required, Object def) {
+        if (!registry.contains(parentId)) {
+            Interactions.logger.warning("Unexisted parent: " + parentId);
+            return null;
         }
 
-        Interactions.logger.warning("Exist registry: " + id);
-        return branchMap.get(id);
+        Interactions.logger.info(id);
+
+        return registry.register(id, new Branch(id, registry.get(parentId), required, def));
     }
 
     @Nullable
     public static Branch getInstance(String id) {
-        return branchMap.get(id);
+        return registry.get(id);
     }
 
     @Nullable
-    public static Branch getInstance(Entry<?> entry) {
-        return branchMap.get(entry.getName());
+    public static Branch getInstance(Entry entry) {
+        return registry.get(entry.getName());
     }
 
     @Nullable
@@ -53,7 +62,7 @@ public final class Branch {
         List<Branch> branches = new ArrayList<>();
 
         for (String id : ids) {
-            Branch branch = branchMap.get(id);
+            Branch branch = registry.get(id);
 
             if (branch != null) {
                 branches.add(branch);
@@ -75,45 +84,43 @@ public final class Branch {
             boolean flag = false;
 
             for (String key : keys) {
-                if (key.startsWith(branch.name)) {
+                if (key.equals(branch.name) || key.startsWith(branch.name + "_")) {
                     switch (branch.getType()) {
-                        case DOUBLE:
-                            var = infoConfig.getDouble(key);
-                            flag = true;
-                            break;
-                        case INT:
-                            var = infoConfig.getInt(key);
-                            flag = true;
-                            break;
                         case STRING:
                             var = infoConfig.getString(key);
                             flag = true;
                             break;
-                        case STRING_ARRAY:
-                            var = infoConfig.getStringList(key).toArray(new String[0]);
-                            flag = true;
-                            break;
+//                        case STRING_ARRAY:
+//                            var = infoConfig.getStringList(key).toArray(new String[0]);
+//                            flag = true;
+//                            break;
                         case BOOLEAN:
                             var = infoConfig.getBoolean(key);
                             flag = true;
                             break;
-                        case VECTOR:
-                            var = infoConfig.getVector(key);
-                            flag = true;
-                            break;
-                        case SYSTEM:
-                            var = infoConfig.get(key);
-                            flag = true;
-                            break;
-                        case ENTRY: {
-                            Entry<?> entry = Entry.getInstance(branch.name);
-                            Object object = entry.getObject(infoConfig.getConfigurationSection(key));
-                            if (object == null) {
+                        case NUMBER:
+                            IMutableNumber<?> number = IMutableNumber.get(infoConfig.getString(key));
+                            if (number == null) {
                                 available = false;
                             }
 
-                            var = object;
+                            var = number;
                             flag = true;
+                            break;
+                        case ENTRY: {
+                            String name = branch.parent == null ? branch.name : branch.parent.name;
+                            Entry entry = Entry.getInstance(name);
+
+                            ConfigurationSection section = infoConfig.getConfigurationSection(key);
+                            if (section != null) {
+                                Object object = entry.getObject(section);
+                                if (object == null) {
+                                    available = false;
+                                }
+
+                                var = object;
+                                flag = true;
+                            }
                             break;
                         }
                         case CONDITIONS: {
@@ -131,7 +138,7 @@ public final class Branch {
                     if (branch.legalChecker == null || branch.legalChecker.legal(var)) {
                         vars.add(var);
                     } else {
-                        Interactions.logger.warning("Illegal or missing value for branch: " + branch.name + ", value = " + var);
+                        Interactions.logger.warning("Illegal or missing value for branch: " + branch.name + ", value: " + var);
                         available = false;
                     }
                 }
@@ -139,15 +146,18 @@ public final class Branch {
 
             if (!flag) {
                 if (branch.isRequired()) {
-                    Interactions.logger.warning("Entry [" + infoConfig.getName() + "] missing key: " + branch.getName());
+                    Interactions.logger.warning("Entry [" + infoConfig.getName() + "] missing or invaluable key: " + branch.getName());
                     return null;
                 } else {
                     switch (branch.getType()) {
-                        case DOUBLE:
-                            var = infoConfig.getDouble(branch.name, (Double) branch.def);
-                            break;
-                        case INT:
-                            var = infoConfig.getInt(branch.name, (Integer) branch.def);
+                        case NUMBER:
+                            String def;
+                            if (branch.def instanceof Number) {
+                                def = IMutableNumber.parseString((Number) branch.def);
+                            } else {
+                                def = (String) branch.def;
+                            }
+                            var = IMutableNumber.get(infoConfig.getString(branch.name, def));
                             break;
                         case STRING:
                             var = infoConfig.getString(branch.name, (String) branch.def);
@@ -155,8 +165,6 @@ public final class Branch {
                         case BOOLEAN:
                             var = infoConfig.getBoolean(branch.name, (Boolean) branch.def);
                             break;
-                        case VECTOR:
-                            var = infoConfig.getVector(branch.name, (Vector) branch.def);
 //                        case SYSTEM:
 //                            var = infoConfig.get(branch.name);
 //                            break;
@@ -180,7 +188,8 @@ public final class Branch {
 
         return available ? vars : null;
     }
-    
+
+    private final Branch parent;
     private final String name;
     private final EnumBranchType type;
     private final boolean required;
@@ -188,10 +197,19 @@ public final class Branch {
     private ILegalChecker legalChecker = null;
 
     public Branch(String name, EnumBranchType type, boolean required, Object def) {
+        this.parent = null;
         this.name = name;
         this.type = type;
         this.required = required;
         this.def = def;
+    }
+
+    public Branch(String name, Branch parent, boolean required, Object def) {
+        this.parent = parent;
+        this.name = name;
+        this.required = required;
+        this.def = def;
+        this.type = parent.type;
     }
 
     public String getName() {
@@ -226,7 +244,7 @@ public final class Branch {
     }
 
     public enum EnumBranchType {
-        DOUBLE, INT, STRING, STRING_ARRAY, BOOLEAN, VECTOR, SYSTEM, ENTRY, CONDITIONS;
+        STRING, BOOLEAN, NUMBER, SYSTEM, ENTRY, CONDITIONS;
 
         @Nullable
         public static EnumBranchType fromString(@NotNull String name) {

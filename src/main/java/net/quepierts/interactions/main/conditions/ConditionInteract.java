@@ -1,6 +1,5 @@
 package net.quepierts.interactions.main.conditions;
 
-import net.quepierts.interactions.Interactions;
 import net.quepierts.interactions.api.AbstractCondition;
 import net.quepierts.interactions.main.utils.BlockUtils;
 import net.quepierts.interactions.main.utils.EntryUtils;
