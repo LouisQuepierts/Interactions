@@ -45,14 +45,6 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <outputDirectory>E:\minecraft server\Plugin Development\plugins</outputDirectory>
-                </configuration>
-                <version>2.4</version>
-
-            </plugin>
         </plugins>
         <resources>
             <resource>
